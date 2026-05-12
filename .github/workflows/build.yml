@@ -2,11 +2,6 @@ name: ZeroOS Build
 
 on:
   workflow_dispatch:
-    inputs:
-      build_type:
-        description: 'Build type'
-        default: 'userdebug'
-        required: true
 
 jobs:
   build:
@@ -32,14 +27,17 @@ jobs:
         run: |
           mkdir -p ~/android/lineage
           cd ~/android/lineage
-          repo init -u https://github.com/LineageOS/android.git -b lineage-21.0 --depth=1 --partial-clone
+          git config --global user.email "ccnar@zeoros.dev"
+          git config --global user.name "ccnar0"
+          repo init -u https://github.com/LineageOS/android.git -b lineage-21.0 --depth=1
 
-      - name: Sync source
+      - name: Sync minimal source
         run: |
           cd ~/android/lineage
-          repo sync -c -j4 --no-tags --no-clone-bundle frameworks/base packages/apps/Launcher3 system/core build/make build/soong bionic prebuilts/build-tools
+          repo sync -c -j4 --no-tags --no-clone-bundle
 
       - name: Upload artifacts
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: zeoros-build
