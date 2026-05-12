@@ -1,11 +1,47 @@
-- name: Sync source (minimal)
+name: ZeroOS Build
+
+on:
+  workflow_dispatch:
+    inputs:
+      build_type:
+        description: 'Build type'
+        default: 'userdebug'
+        required: true
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 360
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup build environment
+        run: |
+          sudo apt update
+          sudo apt install -y git curl python3 openjdk-17-jdk build-essential zip unzip rsync bc flex bison libssl-dev libncurses-dev libelf-dev gcc-aarch64-linux-gnu
+
+      - name: Setup repo tool
+        run: |
+          mkdir -p ~/bin
+          curl https://storage.googleapis.com/git-repo-downloads/repo > ~/bin/repo
+          chmod +x ~/bin/repo
+          echo "$HOME/bin" >> $GITHUB_PATH
+
+      - name: Init LineageOS source
+        run: |
+          mkdir -p ~/android/lineage
+          cd ~/android/lineage
+          repo init -u https://github.com/LineageOS/android.git -b lineage-21.0 --depth=1 --partial-clone
+
+      - name: Sync source
         run: |
           cd ~/android/lineage
-          repo sync -c -j4 --no-tags --no-clone-bundle \
-            frameworks/base \
-            packages/apps/Launcher3 \
-            system/core \
-            build/make \
-            build/soong \
-            bionic \
-            prebuilts/build-tools
+          repo sync -c -j4 --no-tags --no-clone-bundle frameworks/base packages/apps/Launcher3 system/core build/make build/soong bionic prebuilts/build-tools
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: zeoros-build
+          path: ~/android/lineage/out/
+          retention-days: 7
