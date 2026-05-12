@@ -18,35 +18,39 @@ jobs:
           sudo docker image prune -af
           df -h
 
-      - name: Setup build environment
+      - name: Setup tools
         run: |
           sudo apt update
-          sudo apt install -y git curl python3 openjdk-17-jdk build-essential zip unzip rsync bc flex bison libssl-dev libncurses-dev libelf-dev gcc-aarch64-linux-gnu
-
-      - name: Setup repo tool
-        run: |
+          sudo apt install -y git curl python3 openjdk-17-jdk build-essential zip unzip rsync bc flex bison libssl-dev
           mkdir -p ~/bin
           curl https://storage.googleapis.com/git-repo-downloads/repo > ~/bin/repo
           chmod +x ~/bin/repo
           echo "$HOME/bin" >> $GITHUB_PATH
-
-      - name: Init LineageOS source
-        run: |
-          mkdir -p ~/android/lineage
-          cd ~/android/lineage
           git config --global user.email "ccnar@zeoros.dev"
           git config --global user.name "ccnar0"
-          repo init -u https://github.com/LineageOS/android.git -b lineage-21.0 --depth=1
 
-      - name: Sync minimal source
+      - name: Init AOSP minimal
         run: |
-          cd ~/android/lineage
-          repo sync -c -j4 --no-tags --no-clone-bundle
+          mkdir -p ~/aosp
+          cd ~/aosp
+          repo init -u https://android.googlesource.com/platform/manifest -b android-14.0.0_r1 --depth=1 --partial-clone
+          df -h
+
+      - name: Sync core only
+        run: |
+          cd ~/aosp
+          repo sync -c -j4 --no-tags --no-clone-bundle \
+            platform/frameworks/base \
+            platform/system/core \
+            platform/build \
+            platform/bionic \
+            platform/art
+          df -h
 
       - name: Upload artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: zeoros-build
-          path: ~/android/lineage/out/
+          name: zeoros-aosp
+          path: ~/aosp/
           retention-days: 7
