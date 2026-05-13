@@ -3,6 +3,7 @@ plugins {
 }
 
 android {
+    namespace 'dev.zeoros.launcher'
     compileSdk 34
     defaultConfig {
         applicationId "dev.zeoros.launcher"
